@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!--
+  All-in-one: the panda_block_stack environment (Gazebo + blocks world + Panda
+  with the grasp plugin + ros_control + MoveIt + RViz), then the planning task.
+
+      roslaunch panda_block_planner demo.launch scenario:=five_blocks
+
+  The scene is not duplicated here. The world, the URDF wrapper and the whole
+  bring-up sequence belong to panda_block_stack and are included from it; this
+  package only replaces what drives the arm, and asks for the six-block world
+  that also lives over there.
+-->
+<launch>
+
+  <arg name="scenario" default="model"
+       doc="model | sussman | inverted | far_base | four_blocks | five_blocks |
+            six_blocks" />
+  <arg name="headless" default="false" doc="Run Gazebo without its GUI" />
+  <arg name="rviz"     default="true"  doc="Show the MoveIt motion-planning display" />
+  <arg name="run_task" default="true"
+       doc="Set false to bring the scene up and drive the arm yourself" />
+
+  <include file="$(find panda_block_stack)/launch/stack_blocks.launch">
+    <arg name="headless" value="$(arg headless)" />
+    <arg name="rviz"     value="$(arg rviz)" />
+    <!-- Their two-transfer script must not run: this package's node drives
+         the arm instead, and two nodes commanding one move_group collide. -->
+    <arg name="run_demo" value="false" />
+    <!-- The six-block scene, not their three-block one. Every scenario runs
+         against it: the ones that want fewer blocks stow the rest at the back
+         of the table and filter them out of perception, which is cheaper than
+         picking a world per scenario and getting it wrong once. -->
+    <arg name="world"
+         value="$(find panda_block_stack)/worlds/blocks6.world" />
+  </include>
+
+  <include file="$(find panda_block_planner)/launch/plan_and_stack.launch"
+           if="$(arg run_task)">
+    <arg name="scenario" value="$(arg scenario)" />
+    <arg name="setup"    value="true" />
+    <!-- Leave Gazebo and move_group up when the task finishes, so the tower
+         can be inspected and another scenario run against the same scene. -->
+    <arg name="required" value="false" />
+  </include>
+
+</launch>

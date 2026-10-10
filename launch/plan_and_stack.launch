@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+  Run the planning task against an already-running environment.
+
+      roslaunch panda_block_planner plan_and_stack.launch scenario:=sussman
+
+  Expects Gazebo, the controllers and move_group to be up already - either
+  from panda_block_stack's environment.launch or from demo.launch here with
+  run_task:=false. The scene has to hold every block the scenario names -
+  blocks5.world for five_blocks, blocks6.world for six_blocks - and a scenario
+  that wants fewer runs against any of them, since it stows what it does not
+  use.
+
+  setup:=true teleports the blocks into the scenario's layout first. It is
+  done inside the node rather than by a second <node> tag because roslaunch
+  does not order nodes, and a task that plans while the blocks are still being
+  placed plans against the wrong state.
+-->
+<launch>
+
+  <arg name="scenario" default="model"
+       doc="model | sussman | inverted | far_base | four_blocks | five_blocks |
+            six_blocks" />
+  <arg name="setup" default="true"
+       doc="Place the blocks into the scenario layout before planning" />
+  <!-- required=true tears the whole launch down when the task ends, which is
+       what you want when this file *is* the run. demo.launch passes false so
+       the scene is still standing to look at afterwards. -->
+  <arg name="required" default="true" />
+
+  <node name="plan_and_stack" pkg="panda_block_planner" type="plan_and_stack.py"
+        output="screen" required="$(arg required)">
+    <param name="scenario" value="$(arg scenario)" />
+    <param name="setup"    value="$(arg setup)" />
+  </node>
+
+</launch>
